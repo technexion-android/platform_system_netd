@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2013 Freescale Semiconductor, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +38,7 @@
 #include <base/file.h>
 #include <base/stringprintf.h>
 #include <cutils/log.h>
+#include <cutils/properties.h>
 #include <netutils/ifc.h>
 #include <private/android_filesystem_config.h>
 #include "wifi.h"
@@ -49,6 +51,8 @@ using android::base::WriteStringToFile;
 
 static const char HOSTAPD_CONF_FILE[]    = "/data/misc/wifi/hostapd.conf";
 static const char HOSTAPD_BIN_FILE[]    = "/system/bin/hostapd";
+static const char HOSTAPD_BIN_FILE_RTL[]    = "/system/bin/rtl_hostapd";
+static const char DRIVER_VENDOR_NAME[]  = "wlan.vendor";
 
 SoftapController::SoftapController()
     : mPid(0) {}
@@ -58,6 +62,7 @@ SoftapController::~SoftapController() {
 
 int SoftapController::startSoftap() {
     pid_t pid = 1;
+    char driver_vendor[PROPERTY_VALUE_MAX] = {'\0'};
 
     if (mPid) {
         ALOGE("SoftAP is already running");
@@ -75,9 +80,15 @@ int SoftapController::startSoftap() {
 
     if (!pid) {
         ensure_entropy_file_exists();
-        if (execl(HOSTAPD_BIN_FILE, HOSTAPD_BIN_FILE,
-                  "-e", WIFI_ENTROPY_FILE,
-                  HOSTAPD_CONF_FILE, (char *) NULL)) {
+        if ((property_get(DRIVER_VENDOR_NAME, driver_vendor, NULL)
+                    && (strcmp(driver_vendor, "realtek") == 0))?
+                (execl(HOSTAPD_BIN_FILE_RTL, HOSTAPD_BIN_FILE,
+                       "-e", WIFI_ENTROPY_FILE,
+                       HOSTAPD_CONF_FILE, (char *) NULL)):
+                (execl(HOSTAPD_BIN_FILE, HOSTAPD_BIN_FILE,
+                       "-e", WIFI_ENTROPY_FILE,
+                       HOSTAPD_CONF_FILE, (char *) NULL)
+                 )) {
             ALOGE("execl failed (%s)", strerror(errno));
         }
         ALOGE("SoftAP failed to start");

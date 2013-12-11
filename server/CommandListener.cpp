@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +36,7 @@
 #include <cutils/log.h>
 #include <netutils/ifc.h>
 #include <sysutils/SocketClient.h>
+#include <cutils/properties.h>
 
 #include "CommandListener.h"
 #include "ResponseCode.h"
@@ -171,6 +173,8 @@ static void createChildChains(IptablesTarget target, const char* table, const ch
 
 CommandListener::CommandListener() :
                  FrameworkListener("netd", true) {
+    char nfsmode[PROPERTY_VALUE_MAX] = {'\0'};
+
     registerCmd(new InterfaceCmd());
     registerCmd(new IpFwdCmd());
     registerCmd(new TetherCmd());
@@ -229,7 +233,10 @@ CommandListener::CommandListener() :
     createChildChains(V4V6, "mangle", "POSTROUTING", MANGLE_POSTROUTING);
     createChildChains(V4, "mangle", "FORWARD", MANGLE_FORWARD);
     createChildChains(V4, "nat", "PREROUTING", NAT_PREROUTING);
-    createChildChains(V4, "nat", "POSTROUTING", NAT_POSTROUTING);
+
+    if ( property_get("ro.nfs.mode", nfsmode, "no")
+                    && (strcmp(nfsmode, "no") == 0))
+        createChildChains(V4, "nat", "POSTROUTING", NAT_POSTROUTING);
 
     // Let each module setup their child chains
     setupOemIptablesHook();

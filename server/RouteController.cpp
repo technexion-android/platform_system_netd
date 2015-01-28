@@ -76,11 +76,11 @@ const char* const ROUTE_TABLE_NAME_MAIN  = "main";
 // upstream (yet?), so we can't just pick them up from kernel headers. When (if?) the changes make
 // it upstream, we'll remove this and rely on the kernel header values. For now, add a static assert
 // that will warn us if upstream has given these values some other meaning.
-const uint16_t FRA_UID_START = 18;
-const uint16_t FRA_UID_END   = 19;
-static_assert(FRA_UID_START > FRA_MAX,
-             "Android-specific FRA_UID_{START,END} values also assigned in Linux uapi. "
-             "Check that these values match what the kernel does and then update this assertion.");
+//const uint16_t FRA_UID_START = 18;
+//const uint16_t FRA_UID_END   = 19;
+//static_assert(FRA_UID_START > FRA_MAX,
+//             "Android-specific FRA_UID_{START,END} values also assigned in Linux uapi. "
+//             "Check that these values match what the kernel does and then update this assertion.");
 
 const uint16_t NETLINK_REQUEST_FLAGS = NLM_F_REQUEST | NLM_F_ACK;
 const uint16_t NETLINK_CREATE_REQUEST_FLAGS = NETLINK_REQUEST_FLAGS | NLM_F_CREATE | NLM_F_EXCL;

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
- * Copyright (C) 2014 Freescale Semiconductor, Inc.
+ * Copyright (C) 2014-2015 Freescale Semiconductor, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ using android::base::WriteStringToFile;
 static const char HOSTAPD_CONF_FILE[]    = "/data/misc/wifi/hostapd.conf";
 static const char HOSTAPD_BIN_FILE[]    = "/system/bin/hostapd";
 static const char HOSTAPD_BIN_FILE_RTL[]    = "/system/bin/rtl_hostapd";
+static const char HOSTAPD_BIN_FILE_BCM[]    = "/system/bin/bcm_hostapd";
 static const char DRIVER_VENDOR_NAME[]  = "wlan.vendor";
 
 SoftapController::SoftapController()
@@ -80,17 +81,24 @@ int SoftapController::startSoftap() {
 
     if (!pid) {
         ensure_entropy_file_exists();
-        if ((property_get(DRIVER_VENDOR_NAME, driver_vendor, NULL)
-                    && (strcmp(driver_vendor, "realtek") == 0))?
-                (execl(HOSTAPD_BIN_FILE_RTL, HOSTAPD_BIN_FILE,
+        property_get(DRIVER_VENDOR_NAME, driver_vendor, NULL);
+        int ret = 0;
+        if ((strcmp(driver_vendor, "realtek") == 0)) {
+           ret = execl(HOSTAPD_BIN_FILE_RTL, HOSTAPD_BIN_FILE,
                        "-e", WIFI_ENTROPY_FILE,
-                       HOSTAPD_CONF_FILE, (char *) NULL)):
-                (execl(HOSTAPD_BIN_FILE, HOSTAPD_BIN_FILE,
+                       HOSTAPD_CONF_FILE, (char *) NULL);
+        } else if ((strcmp(driver_vendor, "atheros") == 0)) {
+           ret = execl(HOSTAPD_BIN_FILE, HOSTAPD_BIN_FILE,
                        "-e", WIFI_ENTROPY_FILE,
-                       HOSTAPD_CONF_FILE, (char *) NULL)
-                 )) {
-            ALOGE("execl failed (%s)", strerror(errno));
-        }
+                       HOSTAPD_CONF_FILE, (char *) NULL);
+        } else if ((strcmp(driver_vendor, "broadcom") == 0)) {
+           ret = execl(HOSTAPD_BIN_FILE_BCM, HOSTAPD_BIN_FILE,
+                       "-e", WIFI_ENTROPY_FILE,
+                       HOSTAPD_CONF_FILE, (char *) NULL);
+
+        } else
+            ALOGE("no specific driver vendor");
+        ALOGE("execl failed (%s)", strerror(errno));
         ALOGE("SoftAP failed to start");
         return ResponseCode::ServiceStartFailed;
     } else {
@@ -150,16 +158,10 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
             channel = AP_CHANNEL_DEFAULT;
     }
 
-    std::string wbuf(StringPrintf("interface=%s\n"
-            "driver=nl80211\n"
-            "ctrl_interface=/data/misc/wifi/hostapd\n"
-            "ssid=%s\n"
-            "channel=%d\n"
-            "ieee80211n=1\n"
-            "hw_mode=%c\n"
-            "ignore_broadcast_ssid=%d\n"
-            "wowlan_triggers=any\n",
-            argv[2], argv[3], channel, (channel <= 14) ? 'g' : 'a', hidden));
+    asprintf(&wbuf, "interface=%s\ndriver=nl80211\nctrl_interface="
+            "/data/misc/wifi/hostapd\nssid=%s\nchannel=%d\nieee80211n=1\n"
+            "hw_mode=g\nignore_broadcast_ssid=%d\n",
+            argv[2], argv[3], channel, hidden);
 
     std::string fbuf;
     if (argc > 7) {

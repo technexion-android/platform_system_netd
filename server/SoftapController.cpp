@@ -158,10 +158,15 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
             channel = AP_CHANNEL_DEFAULT;
     }
 
-    asprintf(&wbuf, "interface=%s\ndriver=nl80211\nctrl_interface="
-            "/data/misc/wifi/hostapd\nssid=%s\nchannel=%d\nieee80211n=1\n"
-            "hw_mode=g\nignore_broadcast_ssid=%d\n",
-            argv[2], argv[3], channel, hidden);
+    std::string wbuf(StringPrintf("interface=%s\n"
+            "driver=nl80211\n"
+            "ctrl_interface=/data/misc/wifi/hostapd\n"
+            "ssid=%s\n"
+            "channel=%d\n"
+            "ieee80211n=1\n"
+            "hw_mode=%c\n"
+            "ignore_broadcast_ssid=%d\n",
+            argv[2], argv[3], channel, (channel <= 14) ? 'g' : 'a', hidden));
 
     std::string fbuf;
     if (argc > 7) {

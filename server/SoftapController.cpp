@@ -52,7 +52,7 @@ using android::base::WriteStringToFile;
 static const char HOSTAPD_CONF_FILE[]    = "/data/misc/wifi/hostapd.conf";
 static const char HOSTAPD_BIN_FILE[]    = "/system/bin/hostapd";
 static const char HOSTAPD_BIN_FILE_RTL[]    = "/system/bin/rtl_hostapd";
-static const char HOSTAPD_BIN_FILE_BCM[]    = "/system/bin/bcm_hostapd";
+static const char HOSTAPD_BIN_FILE_BCM[]    = "/system/bin/hostapd";
 static const char DRIVER_VENDOR_NAME[]  = "wlan.vendor";
 
 SoftapController::SoftapController()
